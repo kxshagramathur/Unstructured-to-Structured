@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Document Extraction</title>
+</head>
+<body>
+  <h2>Upload Document for Extraction</h2>
+  <form action="/extract" method="post" enctype="multipart/form-data">
+    <label>Upload PDF/Image:</label><br>
+    <input type="file" name="file" required><br><br>
+
+    <label>Key-Value Fields (comma separated):</label><br>
+    <input type="text" name="key_values" value="Invoice Number, Invoice Date, GST No"><br><br>
+
+    <label>Tables Spec (JSON):</label><br>
+    <textarea name="tables" rows="5" cols="50">
+{
+  "Items Table": ["Item Name", "Qty", "Rate", "Amount"]
+}
+    </textarea><br><br>
+
+    <button type="submit">Extract</button>
+  </form>
+</body>
+</html>
