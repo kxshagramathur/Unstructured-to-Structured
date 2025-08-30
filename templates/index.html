@@ -1,25 +1,660 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Document Extraction</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Data Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 40px;
+        }
+
+        .upload-section {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 30px;
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #4facfe;
+            background: #f0f8ff;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .processing-indicator {
+            display: none;
+            background: #e0f2fe;
+            border: 1px solid #4facfe;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #0288d1;
+        }
+
+        .processing-indicator.show {
+            display: block;
+        }
+
+        .preview-box {
+            background: #f8f9ff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #6b7280;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .preview-box.show {
+            display: block;
+        }
+
+        .file-input-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .file-input-button svg {
+            margin-right: 10px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .textarea-field {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(79, 172, 254, 0.4);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results-section {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 400px;
+        }
+
+        .results-section h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-content {
+            display: none;
+        }
+
+        .json-output {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .table-header {
+            background: #4facfe;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .download-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #6b7280;
+        }
+
+        .data-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h2>Upload Document for Extraction</h2>
-  <form action="/extract" method="post" enctype="multipart/form-data">
-    <label>Upload PDF/Image:</label><br>
-    <input type="file" name="file" required><br><br>
+    <div class="container">
+        <div class="header">
+            <h1>Proj3 AI Invoice Extraction</h1>
+        </div>
 
-    <label>Key-Value Fields (comma separated):</label><br>
-    <input type="text" name="key_values" value="Invoice Number, Invoice Date, GST No"><br><br>
+        <div class="main-content">
+            <div class="upload-section">
+                <form id="extractForm" method="post">
+                    <input type="hidden" id="documentId" name="document_id" value="">
+                    
+                    <div class="form-group">
+                        <label>📁 Upload Document</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput" name="file" class="file-input" accept=".pdf,.jpg,.jpeg,.png" required>
+                            <button type="button" class="file-input-button" onclick="document.getElementById('fileInput').click()">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                Choose File
+                            </button>
+                        </div>
+                        <div class="processing-indicator" id="processingIndicator">
+                            ⏳ Processing document... Please wait while we extract text from your file.
+                        </div>
+                        <div class="preview-box" id="previewBox">
+                            <strong>Document Preview:</strong>
+                            <div id="previewContent"></div>
+                        </div>
+                        <div class="file-name" id="fileName"></div>
+                        <div class="help-text">Supported formats: PDF, JPG, PNG</div>
+                    </div>
 
-    <label>Tables Spec (JSON):</label><br>
-    <textarea name="tables" rows="5" cols="50">
-{
-  "Items Table": ["Item Name", "Qty", "Rate", "Amount"]
-}
-    </textarea><br><br>
+                    <div class="form-group">
+                        <label>Key Fields to Extract</label>
+                        <input type="text" name="key_values" class="input-field" 
+                               value="Invoice Number, Invoice Date, GST No, Total Amount" 
+                               placeholder="Enter comma-separated field names">
+                        <div class="help-text">Example: Invoice Number, Date, Total Amount</div>
+                    </div>
 
-    <button type="submit">Extract</button>
-  </form>
+                    <div class="form-group">
+                        <label>Table Column Keywords</label>
+                        <textarea name="table_columns" class="input-field textarea-field" 
+                                  placeholder="Enter keywords for table columns, one per line">Item Name
+Quantity
+Rate
+Amount</textarea>
+                        <div class="help-text">Enter column names you want to extract from tables</div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                         Extract Data
+                    </button>
+                </form>
+            </div>
+
+            <div class="results-section">
+                <h3>Extraction Results</h3>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your document...</p>
+                </div>
+
+                <div class="results-content" id="resultsContent">
+                    <div id="jsonResults"></div>
+                    <div id="tableResults"></div>
+                </div>
+
+                <div id="errorMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDocumentId = null;
+        let isDocumentProcessing = false;
+
+        // File input handling with immediate processing
+        document.getElementById('fileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name;
+            const processingIndicator = document.getElementById('processingIndicator');
+            const previewBox = document.getElementById('previewBox');
+            const previewContent = document.getElementById('previewContent');
+            const fileNameDiv = document.getElementById('fileName');
+            const fileButton = document.querySelector('.file-input-button');
+
+            // Show processing state
+            fileNameDiv.textContent = `Selected: ${fileName}`;
+            processingIndicator.classList.add('show');
+            previewBox.classList.remove('show');
+            fileButton.disabled = true;
+            fileButton.innerHTML = `
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                </svg>
+                Processing...
+            `;
+            isDocumentProcessing = true;
+
+            try {
+                // Step 1: Process document with OCR
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/process-document', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Document processed successfully
+                    currentDocumentId = result.document_id;
+                    document.getElementById('documentId').value = currentDocumentId;
+                    
+                    // Show preview
+                    previewContent.textContent = result.preview;
+                    previewBox.classList.add('show');
+                    
+                    // Update status
+                    processingIndicator.innerHTML = '✅ Document processed successfully! You can now extract data.';
+                    processingIndicator.style.background = '#e8f5e8';
+                    processingIndicator.style.borderColor = '#4caf50';
+                    processingIndicator.style.color = '#2e7d32';
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to process document');
+                }
+            } catch (error) {
+                // Show error
+                processingIndicator.innerHTML = `❌ Error: ${error.message}`;
+                processingIndicator.style.background = '#fee2e2';
+                processingIndicator.style.borderColor = '#dc2626';
+                processingIndicator.style.color = '#dc2626';
+                currentDocumentId = null;
+            } finally {
+                // Reset file button
+                fileButton.disabled = false;
+                fileButton.innerHTML = `
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    Choose File
+                `;
+                isDocumentProcessing = false;
+            }
+        });
+
+        // Form submission - Step 2: LLM Extraction
+        document.getElementById('extractForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Check if document is processed
+            if (!currentDocumentId) {
+                alert('Please upload and process a document first.');
+                return;
+            }
+
+            if (isDocumentProcessing) {
+                alert('Please wait for document processing to complete.');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const resultsContent = document.getElementById('resultsContent');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🤖 Extracting with AI...';
+            loading.style.display = 'block';
+            resultsContent.style.display = 'none';
+            errorMessage.innerHTML = '';
+
+            try {
+                const formData = new FormData(this);
+                
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayResults(result.result);
+                } else {
+                    throw new Error(result.error || 'Extraction failed');
+                }
+            } catch (error) {
+                errorMessage.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            } finally {
+                // Reset UI
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Extract Data';
+                loading.style.display = 'none';
+            }
+        });
+
+        function displayResults(resultText) {
+            const resultsContent = document.getElementById('resultsContent');
+            const jsonResults = document.getElementById('jsonResults');
+            const tableResults = document.getElementById('tableResults');
+
+            // Clear previous results
+            jsonResults.innerHTML = '';
+            tableResults.innerHTML = '';
+
+            try {
+                // Split the result into JSON and CSV sections
+                const sections = resultText.split('\n\n');
+                
+                sections.forEach(section => {
+                    section = section.trim();
+                    
+                    // Check if it's JSON
+                    if (section.startsWith('{') && section.endsWith('}')) {
+                        displayJSON(section, jsonResults);
+                    }
+                    // Check if it's CSV (contains commas and multiple lines)
+                    else if (section.includes(',') && section.includes('\n')) {
+                        displayTable(section, tableResults);
+                    }
+                });
+
+                resultsContent.style.display = 'block';
+            } catch (error) {
+                document.getElementById('errorMessage').innerHTML = 
+                    `<div class="error">❌ Error parsing results: ${error.message}</div>`;
+            }
+        }
+
+        function displayJSON(jsonText, container) {
+            try {
+                const data = JSON.parse(jsonText);
+                const formattedJson = JSON.stringify(data, null, 2);
+                
+                const jsonDiv = document.createElement('div');
+                jsonDiv.innerHTML = `
+                    <h4>📋 Key-Value Fields</h4>
+                    <div class="json-output">${formattedJson}</div>
+                `;
+                container.appendChild(jsonDiv);
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+            }
+        }
+
+        function displayTable(csvText, container) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return;
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+
+            const tableDiv = document.createElement('div');
+            tableDiv.className = 'table-container';
+            
+            const tableId = `table_${Date.now()}`;
+            
+            tableDiv.innerHTML = `
+                <div class="table-header">
+                    <h4>📊 Extracted Table</h4>
+                    <button class="download-btn" onclick="downloadCSV('${tableId}', 'extracted_data.csv')">
+                        📥 Download CSV
+                    </button>
+                </div>
+                <table class="data-table" id="${tableId}">
+                    <thead>
+                        <tr>
+                            ${headers.map(header => `<th>${header}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => 
+                            `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`
+                        ).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.appendChild(tableDiv);
+        }
+
+        function downloadCSV(tableId, filename) {
+            const table = document.getElementById(tableId);
+            let csv = '';
+            
+            // Get headers
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+            csv += headers.join(',') + '\n';
+            
+            // Get data rows
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent);
+                csv += cells.join(',') + '\n';
+            });
+            
+            // Create download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', filename);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
 </body>
 </html>
